@@ -64,3 +64,13 @@ ledger:
     enabled: ${FRAUD_ENABLED:false}
     url: ${FRAUD_URL:http://localhost:8082}
     timeout-ms: ${FRAUD_TIMEOUT_MS:150}
+
+security:
+  enabled: ${SECURITY_ENABLED:true}
+  jwt:
+    secret: ${JWT_SECRET:dev-secret-please-change-32bytes-minimum-0123456789}
+  rate-limit:
+    capacity: ${RATE_LIMIT_CAPACITY:20}
+    refill-per-second: ${RATE_LIMIT_REFILL:10}
+  service-token:
+    scope: fraud:evaluate

@@ -2,6 +2,7 @@ package com.ledger.presentation.web;
 
 import com.ledger.application.port.in.PostTransactionUseCase;
 import com.ledger.presentation.web.fraud.FraudGate;
+import com.ledger.security.AbacGate;
 import com.ledger.presentation.web.dto.BalanceDto;
 import com.ledger.presentation.web.dto.PostTransactionRequest;
 import com.ledger.presentation.web.dto.PostTransactionResponse;
@@ -21,10 +22,12 @@ public class TransactionController {
 
     private final PostTransactionUseCase postTransaction;
     private final FraudGate fraudGate;
+    private final AbacGate abacGate;
 
-    public TransactionController(PostTransactionUseCase postTransaction, FraudGate fraudGate) {
+    public TransactionController(PostTransactionUseCase postTransaction, FraudGate fraudGate, AbacGate abacGate) {
         this.postTransaction = postTransaction;
         this.fraudGate = fraudGate;
+        this.abacGate = abacGate;
     }
 
     @PostMapping
@@ -32,6 +35,7 @@ public class TransactionController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @Valid @RequestBody PostTransactionRequest request) {
 
+        abacGate.check(request);
         fraudGate.check(request);
 
         List<PostTransactionUseCase.PostingLine> lines = request.postings().stream()
