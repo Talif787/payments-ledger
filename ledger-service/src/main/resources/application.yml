@@ -59,3 +59,8 @@ ledger:
     interval-ms: ${RELAY_INTERVAL_MS:1000}
     accounts-topic: ledger.accounts.v1
     transactions-topic: ledger.transactions.v1
+
+  fraud:
+    enabled: ${FRAUD_ENABLED:false}
+    url: ${FRAUD_URL:http://localhost:8082}
+    timeout-ms: ${FRAUD_TIMEOUT_MS:150}

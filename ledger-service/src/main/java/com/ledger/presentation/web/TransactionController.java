@@ -1,6 +1,7 @@
 package com.ledger.presentation.web;
 
 import com.ledger.application.port.in.PostTransactionUseCase;
+import com.ledger.presentation.web.fraud.FraudGate;
 import com.ledger.presentation.web.dto.BalanceDto;
 import com.ledger.presentation.web.dto.PostTransactionRequest;
 import com.ledger.presentation.web.dto.PostTransactionResponse;
@@ -19,15 +20,19 @@ import org.springframework.web.bind.annotation.RestController;
 public class TransactionController {
 
     private final PostTransactionUseCase postTransaction;
+    private final FraudGate fraudGate;
 
-    public TransactionController(PostTransactionUseCase postTransaction) {
+    public TransactionController(PostTransactionUseCase postTransaction, FraudGate fraudGate) {
         this.postTransaction = postTransaction;
+        this.fraudGate = fraudGate;
     }
 
     @PostMapping
     public ResponseEntity<PostTransactionResponse> post(
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @Valid @RequestBody PostTransactionRequest request) {
+
+        fraudGate.check(request);
 
         List<PostTransactionUseCase.PostingLine> lines = request.postings().stream()
                 .map(p -> new PostTransactionUseCase.PostingLine(

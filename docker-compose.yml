@@ -14,7 +14,6 @@ services:
       retries: 10
     volumes:
       - pgdata:/var/lib/postgresql/data
-      # Creates the reconciliation database on first initialization.
       - ./infra/postgres-init:/docker-entrypoint-initdb.d:ro
 
   kafka:
@@ -41,6 +40,16 @@ services:
       timeout: 5s
       retries: 15
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   ledger-service:
     build:
       context: ./ledger-service
@@ -49,6 +58,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      fraud-service:
+        condition: service_started
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/ledger
       DB_USER: ledger
@@ -56,6 +67,8 @@ services:
       SERVER_PORT: 8080
       KAFKA_BOOTSTRAP: kafka:9092
       RELAY_ENABLED: "true"
+      FRAUD_ENABLED: "true"
+      FRAUD_URL: http://fraud-service:8082
     ports:
       - "8080:8080"
 
@@ -67,8 +80,6 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
-      ledger-service:
-        condition: service_started
     environment:
       RECON_DB_URL: jdbc:postgresql://postgres:5432/reconciliation
       RECON_DB_USER: ledger
@@ -80,6 +91,28 @@ services:
       SERVER_PORT: 8081
     ports:
       - "8081:8081"
+
+  fraud-service:
+    build:
+      context: ./fraud-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      FRAUD_DB_URL: jdbc:postgresql://postgres:5432/fraud
+      FRAUD_DB_USER: ledger
+      FRAUD_DB_PASSWORD: ledger
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP: kafka:9092
+      FRAUD_MODE: SHADOW
+      SERVER_PORT: 8082
+    ports:
+      - "8082:8082"
 
 volumes:
   pgdata:
