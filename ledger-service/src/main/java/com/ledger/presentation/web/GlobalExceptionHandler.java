@@ -53,8 +53,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ErrorResponse> handleResponseStatus(ResponseStatusException e) {
         HttpStatus status = HttpStatus.valueOf(e.getStatusCode().value());
-        String code = status == HttpStatus.FORBIDDEN ? "FRAUD_BLOCKED" : status.name();
-        return build(status, code, e.getReason());
+        String reason = e.getReason();
+        String code = (reason != null && reason.contains(":")) ? reason.substring(0, reason.indexOf(':')).trim() : status.name();
+        return build(status, code, reason);
     }
 
     @ExceptionHandler(Exception.class)
