@@ -1,0 +1,66 @@
+asyncapi: 3.0.0
+info:
+  title: Payments Ledger Events
+  version: 1.0.0
+  description: >
+    Domain events published by the ledger service via the transactional outbox
+    relay. Delivery is at-least-once; every event carries a unique eventId so
+    consumers can deduplicate. Messages are keyed by aggregateId, giving
+    per-aggregate ordering within a partition.
+
+servers:
+  local:
+    host: localhost:9092
+    protocol: kafka
+    description: Local single-node Kafka (KRaft).
+
+channels:
+  accounts:
+    address: ledger.accounts.v1
+    messages:
+      accountOpened:
+        $ref: '#/components/messages/Envelope'
+  transactions:
+    address: ledger.transactions.v1
+    messages:
+      transactionPosted:
+        $ref: '#/components/messages/Envelope'
+
+operations:
+  receiveAccountEvents:
+    action: receive
+    channel:
+      $ref: '#/channels/accounts'
+  receiveTransactionEvents:
+    action: receive
+    channel:
+      $ref: '#/channels/transactions'
+
+components:
+  messages:
+    Envelope:
+      name: EventEnvelope
+      contentType: application/json
+      payload:
+        type: object
+        required: [eventId, eventType, schemaVersion, aggregateId, occurredAt, data]
+        properties:
+          eventId:
+            type: string
+            format: uuid
+            description: Stable unique identity for deduplication.
+          eventType:
+            type: string
+            examples: ["account.opened.v1", "ledger.transaction.posted.v1"]
+          schemaVersion:
+            type: integer
+            description: Version of the data payload schema.
+          aggregateId:
+            type: string
+            description: Partition key; account id or transaction id.
+          occurredAt:
+            type: string
+            format: date-time
+          data:
+            type: object
+            description: The event-type-specific payload.
