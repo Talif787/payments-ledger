@@ -17,6 +17,10 @@ import org.springframework.web.client.RestClient;
  * Calls the fraud service over HTTP with a strict timeout. Any failure (timeout,
  * connection refused, non-2xx) returns an unscreened ALLOW so the ledger is never
  * blocked by a fraud-side problem. Only created when ledger.fraud.enabled=true.
+ *
+ * Built from the auto-configured RestClient.Builder so the call is instrumented
+ * for distributed tracing: the trace context is propagated to the fraud service
+ * and the hop appears as a span.
  */
 @Component
 @ConditionalOnProperty(name = "ledger.fraud.enabled", havingValue = "true")
@@ -27,14 +31,15 @@ public class HttpFraudEvaluator implements FraudEvaluator {
     private final RestClient client;
     private final ObjectProvider<ServiceTokenProvider> serviceToken;
 
-    public HttpFraudEvaluator(@Value("${ledger.fraud.url:http://localhost:8082}") String baseUrl,
+    public HttpFraudEvaluator(RestClient.Builder builder,
+                              @Value("${ledger.fraud.url:http://localhost:8082}") String baseUrl,
                               @Value("${ledger.fraud.timeout-ms:150}") int timeoutMs,
                               ObjectProvider<ServiceTokenProvider> serviceToken) {
         this.serviceToken = serviceToken;
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(timeoutMs);
         factory.setReadTimeout(timeoutMs);
-        this.client = RestClient.builder().baseUrl(baseUrl).requestFactory(factory).build();
+        this.client = builder.baseUrl(baseUrl).requestFactory(factory).build();
     }
 
     @Override
