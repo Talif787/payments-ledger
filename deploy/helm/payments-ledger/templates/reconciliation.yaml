@@ -23,14 +23,14 @@ spec:
             - containerPort: 8081
           env:
             - name: RECON_DB_URL
-              value: "jdbc:postgresql://postgres:5432/reconciliation"
+              value: "jdbc:postgresql://{{ .Values.postgres.host }}:5432/reconciliation"
             - name: RECON_DB_USER
               value: {{ .Values.postgres.user | quote }}
             - name: RECON_DB_PASSWORD
               valueFrom:
                 secretKeyRef: { name: pl-secrets, key: postgres-password }
             - name: LEDGER_DB_URL
-              value: "jdbc:postgresql://postgres:5432/ledger"
+              value: "jdbc:postgresql://{{ .Values.postgres.host }}:5432/ledger"
             - name: LEDGER_DB_USER
               value: {{ .Values.postgres.user | quote }}
             - name: LEDGER_DB_PASSWORD

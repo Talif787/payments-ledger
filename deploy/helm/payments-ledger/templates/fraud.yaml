@@ -23,7 +23,7 @@ spec:
             - containerPort: 8082
           env:
             - name: FRAUD_DB_URL
-              value: "jdbc:postgresql://postgres:5432/fraud"
+              value: "jdbc:postgresql://{{ .Values.postgres.host }}:5432/fraud"
             - name: FRAUD_DB_USER
               value: {{ .Values.postgres.user | quote }}
             - name: FRAUD_DB_PASSWORD

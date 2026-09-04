@@ -1,0 +1,6 @@
+# Copy to terraform.tfvars and fill in. Leave accept_costs=false to keep apply blocked.
+project_id   = "your-gcp-project-id"
+region       = "us-central1"
+
+# Flip to true ONLY when you intend to create billable GKE + Cloud SQL resources.
+accept_costs = false
