@@ -23,7 +23,7 @@ spec:
             - containerPort: 8080
           env:
             - name: DB_URL
-              value: "jdbc:postgresql://postgres:5432/ledger"
+              value: "jdbc:postgresql://{{ .Values.postgres.host }}:5432/ledger"
             - name: DB_USER
               value: {{ .Values.postgres.user | quote }}
             - name: DB_PASSWORD

@@ -1,0 +1,21 @@
+# Helm values for a GKE + Cloud SQL deployment. Fill in from `terraform output`.
+# Requires the Phase 5b chart changes (postgres.enabled toggle and postgres.host).
+
+image:
+  # From: terraform output -raw artifact_registry  (append a trailing slash)
+  registry: "REGION-docker.pkg.dev/PROJECT/payments-ledger/"
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+postgres:
+  enabled: false                    # use Cloud SQL, not the in-cluster Postgres
+  host: "CLOUDSQL_PRIVATE_IP"       # from: terraform output cloudsql_private_ip
+  user: ledger
+  password: "FROM_TERRAFORM_OUTPUT" # from: terraform output -raw db_password
+
+security:
+  enabled: true
+  jwtSecret: "REPLACE_WITH_A_REAL_SECRET"   # do not reuse the dev secret in the cloud
+
+# Note: with Cloud SQL the three databases are created by Terraform. Each service's
+# Flyway migrations run on startup against its database.
