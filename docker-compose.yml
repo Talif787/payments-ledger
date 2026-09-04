@@ -67,6 +67,11 @@ services:
       SERVER_PORT: 8080
       SECURITY_ENABLED: "true"
       JWT_SECRET: dev-secret-please-change-32bytes-minimum-0123456789
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+      MANAGEMENT_OTLP_TRACING_ENDPOINT: http://jaeger:4318/v1/traces
+      LOGGING_STRUCTURED_FORMAT_CONSOLE: ecs
+      SPRING_APPLICATION_NAME: ledger-service
+      SPRING_KAFKA_TEMPLATE_OBSERVATION_ENABLED: "true"
       KAFKA_BOOTSTRAP: kafka:9092
       RELAY_ENABLED: "true"
       FRAUD_ENABLED: "true"
@@ -93,6 +98,11 @@ services:
       SERVER_PORT: 8081
       SECURITY_ENABLED: "true"
       JWT_SECRET: dev-secret-please-change-32bytes-minimum-0123456789
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+      MANAGEMENT_OTLP_TRACING_ENDPOINT: http://jaeger:4318/v1/traces
+      LOGGING_STRUCTURED_FORMAT_CONSOLE: ecs
+      SPRING_APPLICATION_NAME: reconciliation-service
+      SPRING_KAFKA_LISTENER_OBSERVATION_ENABLED: "true"
     ports:
       - "8081:8081"
 
@@ -117,8 +127,22 @@ services:
       SERVER_PORT: 8082
       SECURITY_ENABLED: "true"
       JWT_SECRET: dev-secret-please-change-32bytes-minimum-0123456789
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+      MANAGEMENT_OTLP_TRACING_ENDPOINT: http://jaeger:4318/v1/traces
+      LOGGING_STRUCTURED_FORMAT_CONSOLE: ecs
+      SPRING_APPLICATION_NAME: fraud-service
+      SPRING_KAFKA_LISTENER_OBSERVATION_ENABLED: "true"
     ports:
       - "8082:8082"
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.62.0
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"   # Jaeger UI
+      - "4317:4317"     # OTLP gRPC
+      - "4318:4318"     # OTLP HTTP
 
 volumes:
   pgdata:

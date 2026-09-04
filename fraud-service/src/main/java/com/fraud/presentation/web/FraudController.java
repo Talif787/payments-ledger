@@ -5,6 +5,7 @@ import com.fraud.application.service.EvaluateService;
 import com.fraud.domain.TransactionContext;
 import com.fraud.presentation.web.dto.EvaluateRequest;
 import com.fraud.presentation.web.dto.EvaluateResponse;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.validation.Valid;
 import java.time.Clock;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,10 +19,12 @@ public class FraudController {
 
     private final EvaluateService evaluateService;
     private final Clock clock;
+    private final MeterRegistry meterRegistry;
 
-    public FraudController(EvaluateService evaluateService, Clock clock) {
+    public FraudController(EvaluateService evaluateService, Clock clock, MeterRegistry meterRegistry) {
         this.evaluateService = evaluateService;
         this.clock = clock;
+        this.meterRegistry = meterRegistry;
     }
 
     @PostMapping("/evaluate")
@@ -30,6 +33,12 @@ public class FraudController {
                 request.accountId(), request.amountMinor(), request.currency(),
                 request.counterpartyId(), clock.instant());
         DecisionResult r = evaluateService.evaluate(ctx);
+
+        // Business metric: decisions by effective outcome and mode. Bounded cardinality.
+        meterRegistry.counter("fraud.decisions",
+                "decision", r.effectiveDecision().name(),
+                "mode", r.mode().name()).increment();
+
         return new EvaluateResponse(
                 r.effectiveDecision().name(), r.rulesDecision().name(), r.modelDecision().name(),
                 r.modelScore(), r.mode().name(), r.reasons());
