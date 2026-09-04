@@ -1,0 +1,42 @@
+# Image source. For a local kind cluster, leave registry empty and use locally
+# built images loaded with `kind load` (tag "local", pullPolicy IfNotPresent).
+# For a registry (GHCR, Artifact Registry), set registry to the prefix, e.g.
+# "ghcr.io/<owner>/", and tag to a pushed tag.
+image:
+  registry: ""
+  tag: local
+  pullPolicy: IfNotPresent
+
+security:
+  enabled: true
+  # Development secret. In production this comes from a real secret manager and
+  # the services validate RS256 against a JWKS URL instead of a shared secret.
+  jwtSecret: dev-secret-please-change-32bytes-minimum-0123456789
+
+postgres:
+  user: ledger
+  password: ledger
+  image: postgres:16
+
+kafka:
+  image: apache/kafka:3.8.1
+
+redis:
+  image: redis:7-alpine
+
+jaeger:
+  image: jaegertracing/all-in-one:1.62.0
+
+fraud:
+  mode: SHADOW
+
+tracing:
+  samplingProbability: "1.0"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: "1"
+    memory: 768Mi

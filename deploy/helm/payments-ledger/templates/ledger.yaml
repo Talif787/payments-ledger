@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ledger-service
+  labels:
+    app: ledger-service
+    {{- include "pl.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ledger-service
+  template:
+    metadata:
+      labels:
+        app: ledger-service
+    spec:
+      containers:
+        - name: ledger-service
+          image: {{ include "pl.image" (dict "root" . "name" "ledger-service") }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DB_URL
+              value: "jdbc:postgresql://postgres:5432/ledger"
+            - name: DB_USER
+              value: {{ .Values.postgres.user | quote }}
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: pl-secrets, key: postgres-password }
+            - name: SERVER_PORT
+              value: "8080"
+            - name: KAFKA_BOOTSTRAP
+              value: "kafka:9092"
+            - name: RELAY_ENABLED
+              value: "true"
+            - name: FRAUD_ENABLED
+              value: "true"
+            - name: FRAUD_URL
+              value: "http://fraud-service:8082"
+            - name: SECURITY_ENABLED
+              value: {{ .Values.security.enabled | quote }}
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef: { name: pl-secrets, key: jwt-secret }
+            - name: MANAGEMENT_TRACING_SAMPLING_PROBABILITY
+              value: {{ .Values.tracing.samplingProbability | quote }}
+            - name: MANAGEMENT_OTLP_TRACING_ENDPOINT
+              value: "http://jaeger:4318/v1/traces"
+            - name: LOGGING_STRUCTURED_FORMAT_CONSOLE
+              value: "ecs"
+            - name: SPRING_APPLICATION_NAME
+              value: "ledger-service"
+            - name: SPRING_KAFKA_TEMPLATE_OBSERVATION_ENABLED
+              value: "true"
+          startupProbe:
+            httpGet: { path: /actuator/health, port: 8080 }
+            failureThreshold: 40
+            periodSeconds: 5
+          readinessProbe:
+            httpGet: { path: /actuator/health, port: 8080 }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /actuator/health, port: 8080 }
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ledger-service
+  labels:
+    {{- include "pl.labels" . | nindent 4 }}
+spec:
+  selector:
+    app: ledger-service
+  ports:
+    - port: 8080
+      targetPort: 8080

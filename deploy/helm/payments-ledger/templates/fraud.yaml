@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fraud-service
+  labels:
+    app: fraud-service
+    {{- include "pl.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fraud-service
+  template:
+    metadata:
+      labels:
+        app: fraud-service
+    spec:
+      containers:
+        - name: fraud-service
+          image: {{ include "pl.image" (dict "root" . "name" "fraud-service") }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 8082
+          env:
+            - name: FRAUD_DB_URL
+              value: "jdbc:postgresql://postgres:5432/fraud"
+            - name: FRAUD_DB_USER
+              value: {{ .Values.postgres.user | quote }}
+            - name: FRAUD_DB_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: pl-secrets, key: postgres-password }
+            - name: REDIS_HOST
+              value: "redis"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: KAFKA_BOOTSTRAP
+              value: "kafka:9092"
+            - name: FRAUD_MODE
+              value: {{ .Values.fraud.mode | quote }}
+            - name: SERVER_PORT
+              value: "8082"
+            - name: SECURITY_ENABLED
+              value: {{ .Values.security.enabled | quote }}
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef: { name: pl-secrets, key: jwt-secret }
+            - name: MANAGEMENT_TRACING_SAMPLING_PROBABILITY
+              value: {{ .Values.tracing.samplingProbability | quote }}
+            - name: MANAGEMENT_OTLP_TRACING_ENDPOINT
+              value: "http://jaeger:4318/v1/traces"
+            - name: LOGGING_STRUCTURED_FORMAT_CONSOLE
+              value: "ecs"
+            - name: SPRING_APPLICATION_NAME
+              value: "fraud-service"
+            - name: SPRING_KAFKA_LISTENER_OBSERVATION_ENABLED
+              value: "true"
+          startupProbe:
+            httpGet: { path: /actuator/health, port: 8082 }
+            failureThreshold: 40
+            periodSeconds: 5
+          readinessProbe:
+            httpGet: { path: /actuator/health, port: 8082 }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /actuator/health, port: 8082 }
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fraud-service
+  labels:
+    {{- include "pl.labels" . | nindent 4 }}
+spec:
+  selector:
+    app: fraud-service
+  ports:
+    - port: 8082
+      targetPort: 8082
